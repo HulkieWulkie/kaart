@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bevolkingsdichtheid – AZ Monica 25km</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:linear-gradient(135deg,#0a1628,#1a3a5c);padding:10px 20px;display:flex;align-items:center;gap:12px;border-bottom:2px solid #00b894;flex-shrink:0;box-shadow:0 2px 20px rgba(0,0,0,.6)}
+header h1{font-size:.92rem;font-weight:700;color:#fff;line-height:1.35}
+.badges{margin-left:auto;display:flex;gap:7px;flex-shrink:0}
+.badge{padding:3px 10px;border-radius:20px;font-size:.64rem;font-weight:600;border:1px solid}
+.bg{background:rgba(0,184,148,.12);color:#00b894;border-color:rgba(0,184,148,.3)}
+.bb{background:rgba(255,255,255,.04);color:#9ca3af;border-color:rgba(255,255,255,.1)}
+#map{flex:1}
+
+.leaflet-popup-content-wrapper{background:#0c1a2e;border:1px solid rgba(0,184,148,.5);border-radius:12px;color:#e5e7eb;box-shadow:0 10px 40px rgba(0,0,0,.85)}
+.leaflet-popup-tip{background:#0c1a2e}
+.leaflet-popup-content{margin:14px 17px 13px;min-width:210px}
+.pt{font-size:.97rem;font-weight:700;color:#00b894;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,184,148,.2)}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;margin-bottom:10px}
+.pc .lb{font-size:.6rem;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+.pc .vl{font-size:.9rem;font-weight:600;color:#f3f4f6;margin-top:2px}
+.pc .vl.hi{font-size:1.1rem;color:#00b894}
+.bar-bg{height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:3px}
+.bar-fg{height:100%;border-radius:3px}
+.psub{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)}
+.psub-t{font-size:.6rem;color:#4b5563;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.psub-r{display:flex;justify-content:space-between;font-size:.7rem;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.psub-r:last-child{border:none}
+
+.legend{background:rgba(8,16,30,.96);border:1px solid rgba(0,184,148,.28);border-radius:10px;padding:12px 14px;min-width:175px;backdrop-filter:blur(12px);box-shadow:0 4px 24px rgba(0,0,0,.6)}
+.legend h4{font-size:.74rem;color:#00b894;font-weight:700;margin-bottom:8px}
+.lr{display:flex;align-items:center;gap:8px;margin:3px 0}
+.ls{width:22px;height:13px;border-radius:3px;flex-shrink:0;border:1px solid rgba(255,255,255,.1)}
+.ll{font-size:.7rem;color:#9ca3af}
+
+.infopanel{background:rgba(8,16,30,.96);border:1px solid rgba(0,184,148,.28);border-radius:10px;padding:11px 14px;min-width:185px;backdrop-filter:blur(12px);box-shadow:0 4px 24px rgba(0,0,0,.6)}
+.infopanel h4{font-size:.74rem;color:#00b894;font-weight:700;margin-bottom:8px}
+.ir{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.7rem}
+.ir:last-child{border:none}
+.il{color:#6b7280}.iv{color:#f3f4f6;font-weight:600}
+.ih{margin-top:7px;font-size:.62rem;color:#374151;font-style:italic}
+
+#ls{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 40%,#0d1f3c,#050c18);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:18px;transition:opacity .9s}
+.li{font-size:2.8rem;animation:breathe 2.5s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.lh{font-size:1.1rem;font-weight:700;color:#00b894}
+.lp{font-size:.76rem;color:#4b5563;text-align:center;max-width:400px;line-height:1.8}
+.spin{width:40px;height:40px;border:4px solid rgba(0,184,148,.12);border-top-color:#00b894;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pw{width:320px;text-align:center}
+.pt2{height:7px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:8px}
+.pb{height:100%;border-radius:4px;transition:width .35s ease;width:0;background:linear-gradient(90deg,#00b894,#55efc4,#00b894);background-size:200%;animation:sh 2s linear infinite}
+@keyframes sh{0%{background-position:200%}100%{background-position:-200%}}
+.ptxt{font-size:.7rem;color:#374151}
+.pstep{font-size:.67rem;color:#1f2937;min-height:16px;margin-top:3px}
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:1.4rem">🗺️</span>
+  <h1>Bevolkingsdichtheid – Gemeenten binnen 25 km van AZ Monica Deurne</h1>
+  <div class="badges">
+    <span class="badge bg">64 gemeenten</span>
+    <span class="badge bb">Peiljaar 2024</span>
+    <span class="badge bb">Grenzen: © OpenStreetMap</span>
+  </div>
+</header>
+<div id="map"></div>
+
+<div id="ls">
+  <div class="li">🏙️</div>
+  <div class="lh">Gemeentegrenzen laden…</div>
+  <div class="lp">
+    Officiële grenzen worden opgehaald via de OpenStreetMap Overpass API.<br>
+    Alle gemeenten worden opgezocht via hun officiële Belgische NIS-code (<code>ref:INS</code>).<br>
+    Dit is een éénmalige query — even geduld.
+  </div>
+  <div class="spin"></div>
+  <div class="pw">
+    <div class="pt2"><div class="pb" id="pb"></div></div>
+    <div class="ptxt" id="ptxt">Overpass API aanroepen…</div>
+  </div>
+  <div class="pstep" id="pstep">&nbsp;</div>
+</div>
+
+<script>
+// ============================================================
+// VOLLEDIGE DATASET – 64 rijen, NIS-codes geverifieerd via Statbel
+// ============================================================
+const RAW = [
+  // [postcode, NIS, naam, dichtheid, inwoners, score]
+  ["1980","23096","Zemst",                                540.6,  22090, 1.3],
+  ["2000","11002","Antwerpen (Centrum)",                  7889,   42600, 6.4],
+  ["2018","11002","Antwerpen (Zuid / Zurenborg)",         11186,  66000, 8.7],
+  ["2020","11002","Antwerpen (Linkeroever / Kiel)",       4831,   28500, 4.3],
+  ["2030","11002","Antwerpen (Haven / Berendrecht)",      125,    6658,  1.0],
+  ["2040","11002","Antwerpen (Ekeren / Zandvliet)",       192,    10057, 1.0],
+  ["2050","11002","Antwerpen (Hoboken / Nieuw Zuid)",     1591,   17500, 2.0],
+  ["2060","11002","Antwerpen (Noord / Seefhoek)",         13101,  45200, 10.0],
+  ["2100","11002","Deurne",                               6538,   86300, 5.4],
+  ["2140","11002","Borgerhout",                           11969,  46800, 9.2],
+  ["2170","11002","Merksem",                              6076,   48000, 5.1],
+  ["2180","11002","Ekeren",                               3452,   29000, 3.3],
+  ["2600","11002","Berchem",                              7946,   44500, 6.4],
+  ["2610","11002","Wilrijk",                              3215,   43400, 3.1],
+  ["2660","11002","Hoboken",                              3935,   42500, 3.6],
+  ["2070","11056","Zwijndrecht",                          425.9,  18970, 1.2],
+  ["2110","11050","Wijnegem",                             1350.8, 8710,  1.9],
+  ["2150","11007","Borsbeek",                             2967,   11600, 3.0],
+  ["2160","11052","Wommelgem",                            1043.9, 14830, 1.6],
+  ["2220","12014","Heist-op-den-Berg",                    516,    44330, 1.3],
+  ["2222","12014","Itegem",                               516,    7640,  1.3],
+  ["2240","11054","Zandhoven",                            334.8,  15740, 1.1],
+  ["2280","13010","Grobbendonk",                          409.2,  13260, 1.2],
+  ["2290","13044","Vorselaar",                            292.5,  10560, 1.1],
+  ["2390","11057","Malle",                                313.1,  15870, 1.1],
+  ["2500","12021","Lier",                                 772.6,  36870, 1.4],
+  ["2520","11035","Ranst",                                452.3,  19240, 1.2],
+  ["2530","11004","Boechout",                             680.1,  13620, 1.4],
+  ["2540","11021","Hove",                                 1390.2, 10160, 1.9],
+  ["2547","11025","Lint",                                 1504.1, 9030,  2.0],
+  ["2550","11024","Kontich",                              916,    22360, 1.5],
+  ["2560","12026","Nijlen",                               605.9,  23230, 1.3],
+  ["2570","12009","Duffel",                               800.9,  17850, 1.5],
+  ["2580","12029","Putte",                                543,    17110, 1.3],
+  ["2620","11018","Hemiksem",                             2267.7, 9900,  2.5],
+  ["2627","11038","Schelle",                              1109.4, 8060,  1.7],
+  ["2630","11001","Aartselaar",                           1369.7, 14680, 1.9],
+  ["2640","11029","Mortsel",                              3434.6, 28910, 3.3],
+  ["2650","11013","Edegem",                               2696,   23090, 2.8],
+  ["2800","12025","Walem",                                1362.8, 3950,  1.9],
+  ["2801","12025","Heffen",                               1362.8, 3020,  1.9],
+  ["2811","12025","Leest",                                1362.8, 3690,  1.9],
+  ["2812","12025","Muizen",                               1362.8, 5340,  1.9],
+  ["2820","12005","Bonheiden",                            535.8,  15890, 1.3],
+  ["2830","12040","Willebroek",                           1045.8, 28120, 1.6],
+  ["2840","11037","Rumst",                                778.7,  16040, 1.5],
+  ["2845","11030","Niel",                                 2063.4, 10510, 2.3],
+  ["2850","11005","Boom",                                 2668.7, 17680, 2.8],
+  ["2860","12035","Sint-Katelijne-Waver",                 606.2,  22690, 1.3],
+  ["2870","12030","Puurs-Sint-Amands",                    550.8,  22650, 1.3],
+  ["2880","12007","Bornem",                               481.3,  24050, 1.2],
+  ["2900","11040","Schoten",                              1183.5, 36170, 1.7],
+  ["2920","11022","Kalmthout",                            331.8,  20080, 1.1],
+  ["2930","11008","Brasschaat",                           995.8,  42310, 1.6],
+  ["2940","11044","Stabroek",                             885.5,  18560, 1.5],
+  ["2950","11023","Kapellen",                             751.6,  27050, 1.4],
+  ["2960","11009","Brecht",                               335.3,  30060, 1.1],
+  ["2970","11039","Schilde",                              568.3,  21820, 1.3],
+  ["2980","11055","Zoersel",                              588.6,  24720, 1.3],
+  ["2990","11053","Wuustwezel",                           245.4,  20610, 1.1],
+  ["9100","46021","Sint-Niklaas",                         981.7,  82740, 1.6],
+  ["9120","46003","Beveren",                              425.9,  50890, 1.2],
+  ["9140","46025","Temse",                                788.4,  28650, 1.5],
+  ["9150","46013","Kruibeke",                             425.9,  16100, 1.2],
+];
+
+// Group rows by NIS → weighted average display per polygon
+const GROUPS = {};
+RAW.forEach(([pc,nis,naam,d,inv,s]) => {
+  if(!GROUPS[nis]) GROUPS[nis]={parts:[],invTot:0};
+  GROUPS[nis].parts.push({pc,naam,d,inv,s});
+  GROUPS[nis].invTot += inv;
+});
+
+const BY_NIS = {};
+Object.entries(GROUPS).forEach(([nis,g]) => {
+  const t = g.invTot;
+  const dw = g.parts.reduce((a,p)=>a+p.d*p.inv,0)/t;
+  const sw = g.parts.reduce((a,p)=>a+p.s*p.inv,0)/t;
+  const multi = g.parts.length > 1;
+  BY_NIS[nis] = {
+    nis,
+    naam: multi ? (nis==="11002"?"Antwerpen (stad)":nis==="12025"?"Mechelen":nis==="12014"?"Heist-op-den-Berg":g.parts[0].naam) : g.parts[0].naam,
+    d: dw, inv: t, s: sw,
+    pc: g.parts.map(p=>p.pc).join(", "),
+    parts: multi ? g.parts : null,
+  };
+});
+
+// Unique NIS codes needed
+const NEEDED_NIS = Object.keys(BY_NIS);
+// Also add 12034 (Sint-Amands, pre-merger partner of Puurs 12030)
+BY_NIS["12034"] = {...BY_NIS["12030"], naam:"Puurs-Sint-Amands (Sint-Amands)"};
+NEEDED_NIS.push("12034");
+
+// ============================================================
+// COLOR SCALE
+// ============================================================
+function col(d) {
+  if(d>10000) return "#001f0a";
+  if(d>7000)  return "#003d14";
+  if(d>5000)  return "#005e20";
+  if(d>3000)  return "#00852d";
+  if(d>2000)  return "#0ea845";
+  if(d>1500)  return "#2cc05e";
+  if(d>1000)  return "#52d17a";
+  if(d>700)   return "#80df9d";
+  if(d>500)   return "#adeabd";
+  if(d>300)   return "#ccf0d3";
+  return "#e5f9ea";
+}
+function fmt(n){return Math.round(n).toLocaleString("nl-BE")}
+function pct(s){return Math.min(100,Math.round((s/10)*100))}
+
+// ============================================================
+// MAP
+// ============================================================
+const map = L.map("map",{zoomControl:true});
+map.setView([51.21,4.43],10);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png",{
+  attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors © <a href="https://carto.com">CARTO</a>',
+  subdomains:"abcd",maxZoom:19
+}).addTo(map);
+
+// Legend
+L.control({position:"bottomright"}).onAdd=function(){
+  const d=L.DomUtil.create("div","legend");
+  d.innerHTML="<h4>🌿 Dichtheid (inw/km²)</h4>";
+  [[10001,">10.000"],[7001,"7.000–10.000"],[5001,"5.000–7.000"],
+   [3001,"3.000–5.000"],[2001,"2.000–3.000"],[1501,"1.500–2.000"],
+   [1001,"1.000–1.500"],[701,"700–1.000"],[501,"500–700"],
+   [301,"300–500"],[0,"<300"]].forEach(([v,l])=>{
+    d.innerHTML+=`<div class="lr"><div class="ls" style="background:${col(v)}"></div><span class="ll">${l}</span></div>`;
+  });
+  return d;
+}.addTo(map);
+
+// Info panel
+L.control({position:"topleft"}).onAdd=function(){
+  const d=L.DomUtil.create("div","infopanel");
+  d.innerHTML=`<h4>📊 Regio</h4>
+    <div class="ir"><span class="il">Gemeenten</span><span class="iv">64</span></div>
+    <div class="ir"><span class="il">Inwoners</span><span class="iv">1.588.115</span></div>
+    <div class="ir"><span class="il">Max dichtheid</span><span class="iv" style="color:#00b894">13.101/km²</span></div>
+    <div class="ir"><span class="il">Min dichtheid</span><span class="iv">125/km²</span></div>
+    <div class="ir"><span class="il">Peiljaar</span><span class="iv">2024</span></div>
+    <div class="ih">Klik gemeente voor details</div>`;
+  return d;
+}.addTo(map);
+
+// AZ Monica
+L.marker([51.1960,4.4558],{
+  icon:L.divIcon({html:'<div style="width:18px;height:18px;background:#ef4444;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(239,68,68,.3),0 0 14px rgba(239,68,68,.6)"></div>',iconSize:[18,18],iconAnchor:[9,9],className:""})
+  ,zIndexOffset:2000}).addTo(map)
+ .bindTooltip("<b>🏥 AZ Monica Deurne</b><br><small style='color:#9ca3af'>Referentiepunt (25 km straal)</small>",{permanent:false,direction:"top",offset:[0,-10]});
+
+// GeoJSON layer
+const gLayer = L.geoJSON(null,{
+  style:f=>({fillColor:col(f.properties.d),fillOpacity:.83,color:"rgba(255,255,255,.18)",weight:1.1}),
+  onEachFeature:(f,layer)=>{
+    const g=f.properties;
+    layer.on({
+      mouseover(e){e.target.setStyle({weight:2.2,color:"rgba(255,255,255,.75)",fillOpacity:.95});e.target.bringToFront()},
+      mouseout(e){gLayer.resetStyle(e.target)},
+      click(e){
+        let sub="";
+        if(g.parts){
+          sub=`<div class="psub"><div class="psub-t">Deelgebieden</div>`;
+          g.parts.forEach(p=>{sub+=`<div class="psub-r"><span style="color:#9ca3af">${p.naam} <span style="color:#4b5563">(${p.pc})</span></span><span style="color:#00b894;font-weight:600">${fmt(p.d)}/km²</span></div>`;});
+          sub+="</div>";
+        }
+        L.popup({maxWidth:310}).setLatLng(e.latlng).setContent(`
+          <div class="pt">📍 ${g.naam}</div>
+          <div class="pg">
+            <div class="pc"><div class="lb">Dichtheid</div><div class="vl hi">${fmt(g.d)}<span style="font-size:.65rem;color:#6b7280"> /km²</span></div><div class="bar-bg"><div class="bar-fg" style="width:${pct(g.s)}%;background:${col(g.d)}"></div></div></div>
+            <div class="pc"><div class="lb">Inwoners</div><div class="vl">${fmt(g.inv)}</div></div>
+            <div class="pc"><div class="lb">Postcode(s)</div><div class="vl" style="font-size:.78rem">${g.pc}</div></div>
+            <div class="pc"><div class="lb">Score (1–10)</div><div class="vl">${g.s.toFixed(1)}</div></div>
+          </div>${sub}`).openOn(map);
+      }
+    });
+  }
+}).addTo(map);
+
+// ============================================================
+// OVERPASS QUERY — één bulk request voor alle NIS-codes
+// ============================================================
+const NIS_LIST = NEEDED_NIS.join("|");
+
+// Build the Overpass QL query:
+// Fetch all Belgian administrative boundary relations whose ref:INS tag
+// matches any of our 48 NIS codes — returns full geometry in one shot.
+const QUERY = `[out:json][timeout:90];
+(
+  relation["boundary"="administrative"]["ref:INS"~"^(${NIS_LIST})$"];
+);
+out geom;`;
+
+const ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+];
+
+function setP(pct,txt,step){
+  document.getElementById("pb").style.width=pct+"%";
+  if(txt) document.getElementById("ptxt").textContent=txt;
+  if(step!==undefined) document.getElementById("pstep").textContent=step;
+}
+
+// Convert Overpass relation geometry → GeoJSON
+function relToGeo(el) {
+  if(!el.members) return null;
+  // Collect outer and inner rings
+  const outer = el.members.filter(m=>m.role==="outer"&&m.geometry?.length>2);
+  const inner = el.members.filter(m=>m.role==="inner"&&m.geometry?.length>2);
+  if(!outer.length) return null;
+
+  function toRing(m) {
+    const c = m.geometry.map(p=>[p.lon,p.lat]);
+    if(c[0][0]!==c[c.length-1][0]||c[0][1]!==c[c.length-1][1]) c.push(c[0]);
+    return c;
+  }
+
+  // Try to stitch outer ways into closed rings
+  function stitchRings(ways) {
+    if(ways.length===1) return [toRing(ways[0])];
+    // Build node chains
+    const chains = ways.map(w=>({
+      coords: w.geometry.map(p=>[p.lon,p.lat]),
+      used: false
+    }));
+    const rings = [];
+    while(chains.some(c=>!c.used)) {
+      const start = chains.find(c=>!c.used);
+      if(!start) break;
+      start.used = true;
+      let ring = [...start.coords];
+      let changed = true;
+      while(changed) {
+        changed = false;
+        const tail = ring[ring.length-1];
+        for(const c of chains) {
+          if(c.used) continue;
+          const h = c.coords[0];
+          const t = c.coords[c.coords.length-1];
+          if(Math.abs(h[0]-tail[0])<1e-7&&Math.abs(h[1]-tail[1])<1e-7) {
+            ring = ring.concat(c.coords.slice(1)); c.used=true; changed=true; break;
+          }
+          if(Math.abs(t[0]-tail[0])<1e-7&&Math.abs(t[1]-tail[1])<1e-7) {
+            ring = ring.concat([...c.coords].reverse().slice(1)); c.used=true; changed=true; break;
+          }
+        }
+      }
+      if(ring[0][0]!==ring[ring.length-1][0]||ring[0][1]!==ring[ring.length-1][1]) ring.push(ring[0]);
+      rings.push(ring);
+    }
+    return rings;
+  }
+
+  const oRings = stitchRings(outer);
+  const iRings = inner.length ? stitchRings(inner) : [];
+
+  if(oRings.length===1) {
+    return {type:"Polygon", coordinates:[oRings[0], ...iRings]};
+  }
+  return {type:"MultiPolygon", coordinates: oRings.map(r=>[r])};
+}
+
+async function loadMap() {
+  setP(5,"Overpass API aanroepen…",`Query voor ${NEEDED_NIS.length} NIS-codes…`);
+
+  let data = null;
+  for(let i=0; i<ENDPOINTS.length; i++) {
+    const ep = ENDPOINTS[i];
+    try {
+      setP(8+i*4,"Overpass API aanroepen…",`Endpoint ${i+1}/${ENDPOINTS.length}: ${new URL(ep).hostname}`);
+      const ctrl = new AbortController();
+      const timer = setTimeout(()=>ctrl.abort(), 85000);
+      const r = await fetch(ep, {
+        method:"POST",
+        body:"data="+encodeURIComponent(QUERY),
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        signal: ctrl.signal
+      });
+      clearTimeout(timer);
+      if(!r.ok) { console.warn(ep,"status:",r.status); continue; }
+      data = await r.json();
+      setP(55,"Data ontvangen ✓",`${data.elements?.length||0} relaties teruggekomen van ${new URL(ep).hostname}`);
+      break;
+    } catch(e) {
+      console.warn("Endpoint mislukt:",ep,e.message);
+    }
+  }
+
+  if(!data||!data.elements?.length) {
+    setP(100,"❌ Laden mislukt","Kon geen data ophalen. Controleer internetverbinding en herlaad.");
+    document.getElementById("ptxt").style.color="#ef4444";
+    return;
+  }
+
+  setP(60,"Grenzen verwerken…","Geometrie omzetten naar GeoJSON…");
+
+  // Index Overpass results by ref:INS
+  const byINS = {};
+  data.elements.forEach(el => {
+    const ins = el.tags?.["ref:INS"];
+    if(ins) byINS[ins] = el;
+  });
+
+  setP(72,"Gemeenten koppelen…",`${Object.keys(byINS).length} relaties geïndexeerd op NIS-code`);
+
+  let matched = 0;
+  const addedINS = new Set();
+  const missing = [];
+
+  Object.entries(BY_NIS).forEach(([nis, g]) => {
+    if(addedINS.has(nis)) return;
+    const el = byINS[nis];
+    if(!el) { missing.push(nis+" ("+g.naam+")"); return; }
+    const geo = relToGeo(el);
+    if(!geo) { missing.push(nis+" ("+g.naam+" - geen geometrie)"); return; }
+    gLayer.addData({type:"Feature", geometry:geo, properties:g});
+    addedINS.add(nis);
+    matched++;
+  });
+
+  if(missing.length) console.warn("Ontbrekend in Overpass resultaat:", missing);
+
+  setP(92,"Kaart renderen…",`${matched} polygonen geladen${missing.length?` · ${missing.length} ontbrekend`:""}`);
+  await new Promise(r=>setTimeout(r,400));
+
+  try {
+    const b = gLayer.getBounds();
+    if(b.isValid()) map.fitBounds(b,{padding:[30,30]});
+  } catch(e){}
+
+  setP(100,`✓ ${matched} gemeenten geladen`,"");
+  const ls = document.getElementById("ls");
+  ls.style.opacity="0";
+  setTimeout(()=>{ls.style.display="none"},1000);
+
+  if(missing.length) {
+    console.info("Ontbrekende gemeenten:", missing.join(", "));
+  }
+}
+
+window.addEventListener("load", loadMap);
+</script>
+</body>
+</html>
