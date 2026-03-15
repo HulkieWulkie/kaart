@@ -16,7 +16,7 @@ header h1{font-size:.93rem;font-weight:700;color:#fff}
 .bg{background:rgba(0,184,148,.12);color:#00b894;border-color:rgba(0,184,148,.3)}
 .bb{background:rgba(255,255,255,.04);color:#9ca3af;border-color:rgba(255,255,255,.1)}
 #map{flex:1}
-.leaflet-popup-content-wrapper{background:#0c1a2e!important;border:1px solid rgba(0,184,148,.5)!important;border-radius:12px!important;color:#e5e7eb!important;box-shadow:0 10px 40px rgba(0,0,0,.8)!important}
+.leaflet-popup-content-wrapper{background:#0c1a2e!important;border:1px solid rgba(0,184,148,.5)!important;border-radius:12px!important;color:#e5e7eb!important}
 .leaflet-popup-tip{background:#0c1a2e!important}
 .leaflet-popup-content{margin:14px 17px 13px!important;min-width:200px}
 .pt{font-size:.97rem;font-weight:700;color:#00b894;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,184,148,.2)}
@@ -37,19 +37,16 @@ header h1{font-size:.93rem;font-weight:700;color:#fff}
 .sr:last-child{border:none}
 .sl{color:#6b7280}.sv{color:#f3f4f6;font-weight:600}
 .sh{margin-top:7px;font-size:.62rem;color:#374151;font-style:italic}
-#ls{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 40%,#0d1f3c,#050c18);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:18px;transition:opacity 1s ease}
-.li{font-size:2.8rem;animation:breathe 2.5s ease-in-out infinite}
-@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-.lh{font-size:1.15rem;font-weight:700;color:#00b894}
-.lp{font-size:.77rem;color:#4b5563;text-align:center;max-width:420px;line-height:1.8}
-.spinner{width:42px;height:42px;border:4px solid rgba(0,184,148,.12);border-top-color:#00b894;border-radius:50%;animation:spin .8s linear infinite}
+#ls{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 40%,#0d1f3c,#050c18);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:14px;transition:opacity 1s ease}
+.lh{font-size:1.1rem;font-weight:700;color:#00b894}
+.lp{font-size:.77rem;color:#4b5563;text-align:center;max-width:400px;line-height:1.8}
+.spinner{width:38px;height:38px;border:4px solid rgba(0,184,148,.15);border-top-color:#00b894;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.pw{width:340px;text-align:center}
-.pt2{height:7px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:8px}
-.pb{height:100%;border-radius:4px;transition:width .35s ease;width:0;background:linear-gradient(90deg,#00b894,#55efc4,#00b894);background-size:200%;animation:sh 2s linear infinite}
-@keyframes sh{0%{background-position:200%}100%{background-position:-200%}}
-.ptxt{font-size:.71rem;color:#9ca3af}
-.pstep{font-size:.67rem;color:#4b5563;min-height:16px;margin-top:3px}
+.pw{width:320px}
+.ptxt{font-size:.75rem;color:#9ca3af;margin-bottom:6px;text-align:center}
+.pt2{height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-bottom:6px}
+.pb{height:100%;border-radius:4px;transition:width .4s ease;width:0;background:linear-gradient(90deg,#00b894,#55efc4)}
+.pstep{font-size:.68rem;color:#374151;min-height:16px;text-align:center}
 </style>
 </head>
 <body>
@@ -57,28 +54,24 @@ header h1{font-size:.93rem;font-weight:700;color:#fff}
   <span style="font-size:1.4rem">&#128506;</span>
   <h1>Bevolkingsdichtheid &ndash; Gemeenten binnen 25 km van AZ Monica Deurne</h1>
   <div class="badges">
-    <span class="badge bg">64 zones</span>
+    <span class="badge bg">60 zones</span>
     <span class="badge bb">Peiljaar 2024</span>
-    <span class="badge bb">Grenzen: &copy; OpenStreetMap</span>
+    <span class="badge bb">&copy; OpenStreetMap</span>
   </div>
 </header>
 <div id="map"></div>
 <div id="ls">
-  <div class="li">&#127961;</div>
-  <div class="lh">Gemeentegrenzen laden&hellip;</div>
-  <div class="lp">
-    Grenzen worden opgehaald via OpenStreetMap op basis van <b>postcodegebieden</b>.<br>
-    Alle 64 zones worden individueel geladen. Even geduld (~30 seconden).
-  </div>
+  <div class="lh">&#128506; Kaart laden&hellip;</div>
+  <div class="lp">Grenzen worden per batch opgehaald via OpenStreetMap.<br>Duurt circa 60 seconden.</div>
   <div class="spinner"></div>
   <div class="pw">
+    <div class="ptxt" id="ptxt">Starten&hellip;</div>
     <div class="pt2"><div class="pb" id="pb"></div></div>
-    <div class="ptxt" id="ptxt">Verbinding maken&hellip;</div>
+    <div class="pstep" id="pstep">&nbsp;</div>
   </div>
-  <div class="pstep" id="pstep">&nbsp;</div>
 </div>
 <script>
-const DATA = [
+const DATA=[
   ["1980","Zemst",540.6,22090,1.3],
   ["2000","Antwerpen (Centrum)",7889,42600,6.4],
   ["2018","Antwerpen (Zuid / Zurenborg)",11186,66000,8.7],
@@ -95,8 +88,7 @@ const DATA = [
   ["2160","Wommelgem",1043.9,14830,1.6],
   ["2170","Merksem",6076,48000,5.1],
   ["2180","Ekeren",3452,29000,3.3],
-  ["2220","Heist-op-den-Berg",516,44330,1.3],
-  ["2222","Itegem",516,7640,1.3],
+  ["2220","Heist-op-den-Berg",516,51970,1.3],
   ["2240","Zandhoven",334.8,15740,1.1],
   ["2280","Grobbendonk",409.2,13260,1.2],
   ["2290","Vorselaar",292.5,10560,1.1],
@@ -118,10 +110,7 @@ const DATA = [
   ["2640","Mortsel",3434.6,28910,3.3],
   ["2650","Edegem",2696,23090,2.8],
   ["2660","Hoboken",3935,42500,3.6],
-  ["2800","Walem",1362.8,3950,1.9],
-  ["2801","Heffen",1362.8,3020,1.9],
-  ["2811","Leest",1362.8,3690,1.9],
-  ["2812","Muizen",1362.8,5340,1.9],
+  ["2800","Mechelen",1362.8,16000,1.9],
   ["2820","Bonheiden",535.8,15890,1.3],
   ["2830","Willebroek",1045.8,28120,1.6],
   ["2840","Rumst",778.7,16040,1.5],
@@ -145,11 +134,11 @@ const DATA = [
   ["9150","Kruibeke",425.9,16100,1.2],
 ];
 
-// Bouw lookup per postcode
-const BY_PC = {};
-DATA.forEach(([pc,naam,d,inv,s]) => { BY_PC[pc] = {pc,naam,d,inv,s}; });
+const BATCHES=[["1980", "2000", "2018", "2020", "2030", "2040", "2050", "2060", "2070", "2100", "2110", "2140", "2150", "2160", "2170"],["2180", "2240", "2280", "2290", "2390", "2500", "2520", "2530", "2540", "2547", "2550", "2560", "2570", "2580", "2600"],["2610", "2620", "2627", "2630", "2640", "2650", "2660", "2820", "2830", "2840", "2845", "2850", "2860", "2870", "2880"],["2900", "2920", "2930", "2940", "2950", "2960", "2970", "2980", "2990", "9100", "9120", "9140", "9150"]];
+const BY_PC={};
+DATA.forEach(([pc,naam,d,inv,s])=>{BY_PC[pc]={pc,naam,d,inv,s};});
 
-function col(d) {
+function col(d){
   if(d>10000)return"#002e10";if(d>7000)return"#004a1a";if(d>5000)return"#006824";
   if(d>3000)return"#008c32";if(d>2000)return"#12a84c";if(d>1500)return"#2ec065";
   if(d>1000)return"#55d080";if(d>700)return"#82dfa0";if(d>500)return"#aeebc0";
@@ -157,30 +146,28 @@ function col(d) {
 }
 function fmt(n){return Math.round(n).toLocaleString("nl-BE");}
 
-const map = L.map("map",{zoomControl:true});
+const map=L.map("map",{zoomControl:true});
 map.setView([51.21,4.43],10);
 L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png",{
   attribution:"&copy; OpenStreetMap &copy; CARTO",subdomains:"abcd",maxZoom:19
 }).addTo(map);
 
-// Legenda
-L.control({position:"bottomright"}).onAdd = function() {
-  const d = L.DomUtil.create("div","legend");
-  d.innerHTML = "<h4>&#127807; Dichtheid (inw/km&sup2;)</h4>";
+L.control({position:"bottomright"}).onAdd=function(){
+  const d=L.DomUtil.create("div","legend");
+  d.innerHTML="<h4>&#127807; Dichtheid (inw/km&sup2;)</h4>";
   [[10001,"&gt;10.000"],[7001,"7.000&ndash;10.000"],[5001,"5.000&ndash;7.000"],
    [3001,"3.000&ndash;5.000"],[2001,"2.000&ndash;3.000"],[1501,"1.500&ndash;2.000"],
    [1001,"1.000&ndash;1.500"],[701,"700&ndash;1.000"],[501,"500&ndash;700"],
-   [301,"300&ndash;500"],[0,"&lt;300"]].forEach(([v,l]) => {
-    d.innerHTML += `<div class="lr"><div class="ls" style="background:${col(v)}"></div><span class="ll">${l}</span></div>`;
+   [301,"300&ndash;500"],[0,"&lt;300"]].forEach(([v,l])=>{
+    d.innerHTML+=`<div class="lr"><div class="ls" style="background:${col(v)}"></div><span class="ll">${l}</span></div>`;
   });
   return d;
 }.addTo(map);
 
-// Stats
-L.control({position:"topleft"}).onAdd = function() {
-  const d = L.DomUtil.create("div","stats");
-  d.innerHTML = `<h4>&#128202; Regio overzicht</h4>
-    <div class="sr"><span class="sl">Zones</span><span class="sv">64</span></div>
+L.control({position:"topleft"}).onAdd=function(){
+  const d=L.DomUtil.create("div","stats");
+  d.innerHTML=`<h4>&#128202; Regio overzicht</h4>
+    <div class="sr"><span class="sl">Zones</span><span class="sv">60</span></div>
     <div class="sr"><span class="sl">Totaal inwoners</span><span class="sv">1.588.115</span></div>
     <div class="sr"><span class="sl">Hoogste dichtheid</span><span class="sv" style="color:#00b894">13.101/km&sup2;</span></div>
     <div class="sr"><span class="sl">Laagste dichtheid</span><span class="sv">125/km&sup2;</span></div>
@@ -189,21 +176,20 @@ L.control({position:"topleft"}).onAdd = function() {
   return d;
 }.addTo(map);
 
-// AZ Monica
 L.marker([51.1960,4.4558],{
-  icon:L.divIcon({html:'<div style="width:18px;height:18px;background:#ef4444;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(239,68,68,.3),0 0 12px rgba(239,68,68,.5)"></div>',iconSize:[18,18],iconAnchor:[9,9],className:""}),
+  icon:L.divIcon({html:'<div style="width:18px;height:18px;background:#ef4444;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(239,68,68,.3)"></div>',iconSize:[18,18],iconAnchor:[9,9],className:""}),
   zIndexOffset:2000
 }).addTo(map).bindTooltip("<b>&#127973; AZ Monica Deurne</b>",{permanent:false,direction:"top",offset:[0,-10]});
 
-const gLayer = L.geoJSON(null,{
-  style: f => ({fillColor:col(f.properties.d),fillOpacity:.82,color:"rgba(255,255,255,.2)",weight:1.1}),
-  onEachFeature: (f,layer) => {
-    const g = f.properties;
+const gLayer=L.geoJSON(null,{
+  style:f=>({fillColor:col(f.properties.d),fillOpacity:.82,color:"rgba(255,255,255,.22)",weight:1.1}),
+  onEachFeature:(f,layer)=>{
+    const g=f.properties;
     layer.on({
-      mouseover(e){e.target.setStyle({weight:2.2,color:"rgba(255,255,255,.75)",fillOpacity:.95});e.target.bringToFront();},
+      mouseover(e){e.target.setStyle({weight:2.5,color:"rgba(255,255,255,.8)",fillOpacity:.95});e.target.bringToFront();},
       mouseout(e){gLayer.resetStyle(e.target);},
       click(e){
-        const pct = Math.min(100,Math.round((g.s/10)*100));
+        const pct=Math.min(100,Math.round((g.s/10)*100));
         L.popup({maxWidth:280}).setLatLng(e.latlng).setContent(`
           <div class="pt">&#128205; ${g.naam}</div>
           <div class="pg">
@@ -217,14 +203,14 @@ const gLayer = L.geoJSON(null,{
   }
 }).addTo(map);
 
-function relToGeo(el) {
-  if(!el.members) return null;
-  const outer = el.members.filter(m=>m.role==="outer"&&m.geometry&&m.geometry.length>1);
-  const inner = el.members.filter(m=>m.role==="inner"&&m.geometry&&m.geometry.length>1);
-  if(!outer.length) return null;
-  function stitch(ways) {
+function relToGeo(el){
+  if(!el.members)return null;
+  const outer=el.members.filter(m=>m.role==="outer"&&m.geometry&&m.geometry.length>1);
+  const inner=el.members.filter(m=>m.role==="inner"&&m.geometry&&m.geometry.length>1);
+  if(!outer.length)return null;
+  function stitch(ways){
     if(ways.length===1){const c=ways[0].geometry.map(p=>[p.lon,p.lat]);if(c[0][0]!==c[c.length-1][0])c.push(c[0]);return[c];}
-    const segs=ways.map(w=>(({c:w.geometry.map(p=>[p.lon,p.lat]),u:false})));
+    const segs=ways.map(w=>({c:w.geometry.map(p=>[p.lon,p.lat]),u:false}));
     const rings=[];
     while(segs.some(s=>!s.u)){
       const s0=segs.find(s=>!s.u);if(!s0)break;s0.u=true;
@@ -244,12 +230,11 @@ function relToGeo(el) {
   return oR.length===1?{type:"Polygon",coordinates:[oR[0],...iR]}:{type:"MultiPolygon",coordinates:oR.map(r=>[r])};
 }
 
-// Way-gebaseerde geometrie (voor postcodes die als way zijn opgeslagen)
-function wayToGeo(el) {
-  if(!el.geometry||el.geometry.length<3) return null;
-  const c = el.geometry.map(p=>[p.lon,p.lat]);
-  if(c[0][0]!==c[c.length-1][0]||c[0][1]!==c[c.length-1][1]) c.push(c[0]);
-  return {type:"Polygon",coordinates:[c]};
+function wayToGeo(el){
+  if(!el.geometry||el.geometry.length<3)return null;
+  const c=el.geometry.map(p=>[p.lon,p.lat]);
+  if(c[0][0]!==c[c.length-1][0])c.push(c[0]);
+  return{type:"Polygon",coordinates:[c]};
 }
 
 function setP(pct,txt,step){
@@ -264,12 +249,13 @@ const EPS=[
   "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ];
 
-async function post(q,ms=85000){
+async function post(q,ms=30000){
   for(const ep of EPS){
     try{
       const ctrl=new AbortController();
       const t=setTimeout(()=>ctrl.abort(),ms);
-      const r=await fetch(ep,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"},signal:ctrl.signal});
+      const r=await fetch(ep,{method:"POST",body:"data="+encodeURIComponent(q),
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},signal:ctrl.signal});
       clearTimeout(t);
       if(!r.ok)continue;
       const d=await r.json();
@@ -279,123 +265,71 @@ async function post(q,ms=85000){
   return null;
 }
 
+function addFromElements(elements,pcs){
+  const idx={};
+  elements.forEach(el=>{
+    const pc=el.tags&&(el.tags["postal_code"]||el.tags["addr:postcode"]);
+    if(pc&&BY_PC[pc]&&!idx[pc])idx[pc]=el;
+  });
+  let added=0;
+  pcs.forEach(pc=>{
+    const el=idx[pc];if(!el)return;
+    const geo=el.members?relToGeo(el):wayToGeo(el);
+    if(!geo)return;
+    gLayer.addData({type:"Feature",geometry:geo,properties:BY_PC[pc]});
+    added++;
+  });
+  return added;
+}
+
+async function loadBatch(pcs,batchNum,totalBatches,startPct,endPct){
+  setP(startPct,`Batch ${batchNum}/${totalBatches}: ${pcs.length} postcodes...`,pcs.join(", "));
+  const pcStr=pcs.join("|");
+  const q=`[out:json][timeout:30];(relation["boundary"="postal_code"]["postal_code"~"^(${pcStr})$"];way["boundary"="postal_code"]["postal_code"~"^(${pcStr})$"];);out geom;`;
+  const d=await post(q,32000);
+  const added=d?addFromElements(d.elements,pcs):0;
+  setP(endPct,`Batch ${batchNum} klaar: ${added}/${pcs.length} geladen`,"");
+  return added;
+}
+
+async function loadAdminPoly(name,props){
+  const q=`[out:json][timeout:20];relation["boundary"="administrative"]["admin_level"="8"]["name"="${name}"];out geom;`;
+  const d=await post(q,22000);
+  if(!d||!d.elements||!d.elements.length)return false;
+  const el=d.elements[0];
+  const geo=relToGeo(el);if(!geo)return false;
+  gLayer.addData({type:"Feature",geometry:geo,properties:props});
+  return true;
+}
+
 async function loadMap(){
-  const allPC = DATA.map(d=>d[0]);
-  const added = new Set();
-  let matched = 0;
+  let total=0;
 
-  // STAP 1: Haal alle postcodepolygonen op in 1 query
-  setP(5,"Grenzen ophalen via postcodes...","Overpass API &mdash; alle 64 postcodes in 1 query");
-  const pcList = allPC.join("|");
-  const Q1 = `[out:json][timeout:90];(relation["boundary"="postal_code"]["postal_code"~"^(${pcList})$"];way["boundary"="postal_code"]["postal_code"~"^(${pcList})$"];);out geom;`;
-  const d1 = await post(Q1);
+  // Batch 1-4: postcode polygonen
+  total+=await loadBatch(BATCHES[0],1,4,2,24);
+  total+=await loadBatch(BATCHES[1],2,4,24,48);
+  total+=await loadBatch(BATCHES[2],3,4,48,72);
+  total+=await loadBatch(BATCHES[3],4,4,72,88);
 
-  if(d1){
-    // Index op postcode
-    const idx={};
-    d1.elements.forEach(el=>{
-      const pc = el.tags&&el.tags["postal_code"];
-      if(pc&&!idx[pc]) idx[pc]=el;
-    });
+  // Mechelen als admin polygoon
+  setP(90,"Mechelen laden...","admin_level=8");
+  const mechOk=await loadAdminPoly("Mechelen",BY_PC["2800"]);
+  if(mechOk)total++;
 
-    allPC.forEach(pc=>{
-      if(added.has(pc)) return;
-      const el=idx[pc];
-      if(!el) return;
-      const geo = el.type==="relation" ? relToGeo(el) : wayToGeo(el);
-      if(!geo) return;
-      gLayer.addData({type:"Feature",geometry:geo,properties:BY_PC[pc]});
-      added.add(pc);matched++;
-    });
-  }
+  // Heist-op-den-Berg als admin polygoon
+  setP(94,"Heist-op-den-Berg laden...","admin_level=8");
+  const heistOk=await loadAdminPoly("Heist-op-den-Berg",BY_PC["2220"]);
+  if(heistOk)total++;
 
-  setP(60,`${matched}/64 geladen via postcode`,`${64-added.size} nog te laden...`);
-
-  // STAP 2: Fallback via addr:postcode voor ontbrekende
-  const miss2 = allPC.filter(pc=>!added.has(pc));
-  if(miss2.length>0){
-    setP(62,`Stap 2: ${miss2.length} via addr:postcode...`,miss2.join(", "));
-    const pcList2 = miss2.join("|");
-    const Q2 = `[out:json][timeout:60];(relation["addr:postcode"~"^(${pcList2})$"]["boundary"="administrative"];);out geom;`;
-    const d2 = await post(Q2,60000);
-    if(d2){
-      const idx2={};
-      d2.elements.forEach(el=>{
-        const pc=el.tags&&(el.tags["addr:postcode"]||el.tags["postal_code"]);
-        if(pc&&!idx2[pc])idx2[pc]=el;
-      });
-      miss2.forEach(pc=>{
-        if(added.has(pc))return;
-        const el=idx2[pc];if(!el)return;
-        const geo=relToGeo(el);if(!geo)return;
-        gLayer.addData({type:"Feature",geometry:geo,properties:BY_PC[pc]});
-        added.add(pc);matched++;
-      });
-    }
-  }
-
-  setP(80,`${matched}/64 geladen`,`${64-added.size} nog te laden via naam...`);
-
-  // STAP 3: naam-gebaseerde fallback met correcte bbox
-  const miss3 = allPC.filter(pc=>!added.has(pc));
-  const NAAM_PER_PC = {
-    "1980":"Zemst","2070":"Zwijndrecht","2110":"Wijnegem","2150":"Borsbeek",
-    "2160":"Wommelgem","2220":"Heist-op-den-Berg","2222":"Itegem","2240":"Zandhoven",
-    "2280":"Grobbendonk","2290":"Vorselaar","2390":"Malle","2500":"Lier",
-    "2520":"Ranst","2530":"Boechout","2540":"Hove","2547":"Lint","2550":"Kontich",
-    "2560":"Nijlen","2570":"Duffel","2580":"Putte","2620":"Hemiksem","2627":"Schelle",
-    "2630":"Aartselaar","2640":"Mortsel","2650":"Edegem","2800":"Mechelen",
-    "2801":"Mechelen","2811":"Mechelen","2812":"Mechelen",
-    "2820":"Bonheiden","2830":"Willebroek","2840":"Rumst","2845":"Niel","2850":"Boom",
-    "2860":"Sint-Katelijne-Waver","2870":"Puurs-Sint-Amands","2880":"Bornem",
-    "2900":"Schoten","2920":"Kalmthout","2930":"Brasschaat","2940":"Stabroek",
-    "2950":"Kapellen","2960":"Brecht","2970":"Schilde","2980":"Zoersel",
-    "2990":"Wuustwezel","9100":"Sint-Niklaas","9120":"Beveren","9140":"Temse","9150":"Kruibeke",
-    "2000":"Antwerpen","2018":"Antwerpen","2020":"Antwerpen","2030":"Antwerpen",
-    "2040":"Antwerpen","2050":"Antwerpen","2060":"Antwerpen","2100":"Antwerpen",
-    "2140":"Antwerpen","2170":"Antwerpen","2180":"Antwerpen","2600":"Antwerpen",
-    "2610":"Antwerpen","2660":"Antwerpen",
-  };
-
-  if(miss3.length>0){
-    setP(82,`Stap 3: ${miss3.length} via naam...`,miss3.join(", "));
-    const BBOX="(50.85,3.90,51.55,5.00)";
-    const nameQ = miss3
-      .filter(pc=>NAAM_PER_PC[pc])
-      .map(pc=>`relation["boundary"="administrative"]["name"="${NAAM_PER_PC[pc]}"]${BBOX};`)
-      .join("\n");
-    if(nameQ){
-      const Q3=`[out:json][timeout:60];(\n${nameQ}\n);out geom;`;
-      const d3=await post(Q3,65000);
-      if(d3){
-        miss3.forEach(pc=>{
-          if(added.has(pc))return;
-          const naam=NAAM_PER_PC[pc];if(!naam)return;
-          const el=d3.elements.find(e=>e.tags&&e.tags["name"]===naam);
-          if(!el)return;
-          const geo=relToGeo(el);if(!geo)return;
-          gLayer.addData({type:"Feature",geometry:geo,properties:BY_PC[pc]});
-          added.add(pc);matched++;
-        });
-      }
-    }
-  }
-
-  const finalMiss = allPC.filter(pc=>!added.has(pc));
-  setP(96,"Kaart renderen...",`${matched}/64 zones geladen`);
-  await new Promise(r=>setTimeout(r,400));
+  setP(98,"Kaart renderen...",`${total} zones geladen`);
+  await new Promise(r=>setTimeout(r,300));
 
   try{const b=gLayer.getBounds();if(b.isValid())map.fitBounds(b,{padding:[30,30]});}catch(e){}
 
-  const msg = finalMiss.length
-    ? `${matched} geladen. Niet gevonden: ${finalMiss.join(", ")}`
-    : `Alle 64 zones geladen!`;
-  setP(100,msg,"");
-  if(finalMiss.length) console.warn("Ontbrekend:",finalMiss);
-
+  setP(100,`Klaar! ${total} zones geladen.`,"");
   const ls=document.getElementById("ls");
   ls.style.opacity="0";
-  setTimeout(()=>{ls.style.display="none";},1000);
+  setTimeout(()=>{ls.style.display="none";},900);
 }
 
 window.addEventListener("load",loadMap);
