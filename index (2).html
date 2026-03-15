@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bevolkingsdichtheid &ndash; AZ Monica 25km</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI",Arial,sans-serif;background:#0d1117;color:#e5e7eb;height:100vh;display:flex;flex-direction:column}
+header{background:linear-gradient(135deg,#0a1628,#1a3a5c);padding:11px 22px;display:flex;align-items:center;gap:14px;border-bottom:2px solid #00b894;flex-shrink:0}
+header h1{font-size:.93rem;font-weight:700;color:#fff}
+.badges{margin-left:auto;display:flex;gap:7px;flex-shrink:0}
+.badge{padding:3px 10px;border-radius:20px;font-size:.64rem;font-weight:600;border:1px solid;white-space:nowrap}
+.bg{background:rgba(0,184,148,.12);color:#00b894;border-color:rgba(0,184,148,.3)}
+.bb{background:rgba(255,255,255,.04);color:#9ca3af;border-color:rgba(255,255,255,.1)}
+#map{flex:1}
+.leaflet-popup-content-wrapper{background:#0c1a2e!important;border:1px solid rgba(0,184,148,.5)!important;border-radius:12px!important;color:#e5e7eb!important;box-shadow:0 10px 40px rgba(0,0,0,.8)!important}
+.leaflet-popup-tip{background:#0c1a2e!important}
+.leaflet-popup-content{margin:14px 17px 13px!important;min-width:210px}
+.pt{font-size:.97rem;font-weight:700;color:#00b894;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,184,148,.2)}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;margin-bottom:8px}
+.pc .lb{font-size:.61rem;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+.pc .vl{font-size:.9rem;font-weight:600;color:#f3f4f6;margin-top:2px}
+.pc .vl.hi{font-size:1.1rem;color:#00b894}
+.bar-bg{height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:3px}
+.bar-fg{height:100%;border-radius:3px}
+.psub{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)}
+.psub-t{font-size:.61rem;color:#4b5563;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.psub-r{display:flex;justify-content:space-between;font-size:.71rem;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.psub-r:last-child{border:none}
+.legend{background:rgba(8,16,30,.97);border:1px solid rgba(0,184,148,.3);border-radius:10px;padding:12px 14px;min-width:178px;backdrop-filter:blur(12px)}
+.legend h4{font-size:.75rem;color:#00b894;font-weight:700;margin-bottom:9px}
+.lr{display:flex;align-items:center;gap:8px;margin:3px 0}
+.ls{width:22px;height:13px;border-radius:3px;flex-shrink:0;border:1px solid rgba(255,255,255,.1)}
+.ll{font-size:.71rem;color:#9ca3af}
+.stats{background:rgba(8,16,30,.97);border:1px solid rgba(0,184,148,.3);border-radius:10px;padding:11px 14px;min-width:188px;backdrop-filter:blur(12px)}
+.stats h4{font-size:.75rem;color:#00b894;font-weight:700;margin-bottom:8px}
+.sr{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.71rem}
+.sr:last-child{border:none}
+.sl{color:#6b7280}.sv{color:#f3f4f6;font-weight:600}
+.sh{margin-top:7px;font-size:.62rem;color:#374151;font-style:italic}
+#loadScreen{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 40%,#0d1f3c,#050c18);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:18px;transition:opacity 1s ease}
+.li{font-size:2.8rem;animation:breathe 2.5s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.lh{font-size:1.15rem;font-weight:700;color:#00b894}
+.lp{font-size:.77rem;color:#4b5563;text-align:center;max-width:420px;line-height:1.8}
+.spinner{width:42px;height:42px;border:4px solid rgba(0,184,148,.12);border-top-color:#00b894;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pw{width:340px;text-align:center}
+.pt2{height:7px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:8px}
+.pb{height:100%;border-radius:4px;transition:width .35s ease;width:0;background:linear-gradient(90deg,#00b894,#55efc4,#00b894);background-size:200%;animation:sh 2s linear infinite}
+@keyframes sh{0%{background-position:200%}100%{background-position:-200%}}
+.ptxt{font-size:.71rem;color:#9ca3af}
+.pstep{font-size:.67rem;color:#4b5563;min-height:16px;margin-top:3px}
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:1.4rem">&#128506;</span>
+  <h1>Bevolkingsdichtheid &ndash; Gemeenten binnen 25 km van AZ Monica Deurne</h1>
+  <div class="badges">
+    <span class="badge bg">64 gemeenten</span>
+    <span class="badge bb">Peiljaar 2024</span>
+    <span class="badge bb">Grenzen: &copy; OpenStreetMap</span>
+  </div>
+</header>
+<div id="map"></div>
+<div id="loadScreen">
+  <div class="li">&#127961;</div>
+  <div class="lh">Gemeentegrenzen laden&hellip;</div>
+  <div class="lp">Grenzen worden opgehaald via OpenStreetMap Overpass API.<br>Dit duurt ongeveer 30 seconden.</div>
+  <div class="spinner"></div>
+  <div class="pw">
+    <div class="pt2"><div class="pb" id="pBar"></div></div>
+    <div class="ptxt" id="pTxt">Verbinding maken&hellip;</div>
+  </div>
+  <div class="pstep" id="pStep">&nbsp;</div>
+</div>
+<script>
+const RAW=[
+["1980","23096","Zemst",540.6,22090,1.3],
+["2000","11002","Antwerpen (Centrum)",7889,42600,6.4],
+["2018","11002","Antwerpen (Zuid / Zurenborg)",11186,66000,8.7],
+["2020","11002","Antwerpen (Linkeroever / Kiel)",4831,28500,4.3],
+["2030","11002","Antwerpen (Haven / Berendrecht)",125,6658,1.0],
+["2040","11002","Antwerpen (Ekeren / Zandvliet)",192,10057,1.0],
+["2050","11002","Antwerpen (Hoboken / Nieuw Zuid)",1591,17500,2.0],
+["2060","11002","Antwerpen (Noord / Seefhoek)",13101,45200,10.0],
+["2100","11002","Deurne",6538,86300,5.4],
+["2140","11002","Borgerhout",11969,46800,9.2],
+["2170","11002","Merksem",6076,48000,5.1],
+["2180","11002","Ekeren",3452,29000,3.3],
+["2600","11002","Berchem",7946,44500,6.4],
+["2610","11002","Wilrijk",3215,43400,3.1],
+["2660","11002","Hoboken",3935,42500,3.6],
+["2070","11056","Zwijndrecht",425.9,18970,1.2],
+["2110","11050","Wijnegem",1350.8,8710,1.9],
+["2150","11007","Borsbeek",2967,11600,3.0],
+["2160","11052","Wommelgem",1043.9,14830,1.6],
+["2220","12014","Heist-op-den-Berg",516,44330,1.3],
+["2222","12014","Itegem",516,7640,1.3],
+["2240","11054","Zandhoven",334.8,15740,1.1],
+["2280","13010","Grobbendonk",409.2,13260,1.2],
+["2290","13044","Vorselaar",292.5,10560,1.1],
+["2390","11057","Malle",313.1,15870,1.1],
+["2500","12021","Lier",772.6,36870,1.4],
+["2520","11035","Ranst",452.3,19240,1.2],
+["2530","11004","Boechout",680.1,13620,1.4],
+["2540","11021","Hove",1390.2,10160,1.9],
+["2547","11025","Lint",1504.1,9030,2.0],
+["2550","11024","Kontich",916,22360,1.5],
+["2560","12026","Nijlen",605.9,23230,1.3],
+["2570","12009","Duffel",800.9,17850,1.5],
+["2580","12029","Putte",543,17110,1.3],
+["2620","11018","Hemiksem",2267.7,9900,2.5],
+["2627","11038","Schelle",1109.4,8060,1.7],
+["2630","11001","Aartselaar",1369.7,14680,1.9],
+["2640","11029","Mortsel",3434.6,28910,3.3],
+["2650","11013","Edegem",2696,23090,2.8],
+["2800","12025","Walem",1362.8,3950,1.9],
+["2801","12025","Heffen",1362.8,3020,1.9],
+["2811","12025","Leest",1362.8,3690,1.9],
+["2812","12025","Muizen",1362.8,5340,1.9],
+["2820","12005","Bonheiden",535.8,15890,1.3],
+["2830","12040","Willebroek",1045.8,28120,1.6],
+["2840","11037","Rumst",778.7,16040,1.5],
+["2845","11030","Niel",2063.4,10510,2.3],
+["2850","11005","Boom",2668.7,17680,2.8],
+["2860","12035","Sint-Katelijne-Waver",606.2,22690,1.3],
+["2870","12030","Puurs-Sint-Amands",550.8,22650,1.3],
+["2880","12007","Bornem",481.3,24050,1.2],
+["2900","11040","Schoten",1183.5,36170,1.7],
+["2920","11022","Kalmthout",331.8,20080,1.1],
+["2930","11008","Brasschaat",995.8,42310,1.6],
+["2940","11044","Stabroek",885.5,18560,1.5],
+["2950","11023","Kapellen",751.6,27050,1.4],
+["2960","11009","Brecht",335.3,30060,1.1],
+["2970","11039","Schilde",568.3,21820,1.3],
+["2980","11055","Zoersel",588.6,24720,1.3],
+["2990","11053","Wuustwezel",245.4,20610,1.1],
+["9100","46021","Sint-Niklaas",981.7,82740,1.6],
+["9120","46003","Beveren",425.9,50890,1.2],
+["9140","46025","Temse",788.4,28650,1.5],
+["9150","46013","Kruibeke",425.9,16100,1.2],
+];
+
+const GROUPS={};
+RAW.forEach(([pc,nis,naam,d,inv,s])=>{
+  if(!GROUPS[nis])GROUPS[nis]={parts:[],t:0};
+  GROUPS[nis].parts.push({pc,naam,d,inv,s});
+  GROUPS[nis].t+=inv;
+});
+const BY_NIS={};
+Object.entries(GROUPS).forEach(([nis,g])=>{
+  const t=g.t,multi=g.parts.length>1;
+  BY_NIS[nis]={
+    nis,
+    naam:multi?(nis==="11002"?"Antwerpen (stad)":nis==="12025"?"Mechelen":nis==="12014"?"Heist-op-den-Berg":g.parts[0].naam):g.parts[0].naam,
+    d:g.parts.reduce((a,p)=>a+p.d*p.inv,0)/t,
+    inv:t,
+    s:g.parts.reduce((a,p)=>a+p.s*p.inv,0)/t,
+    pc:g.parts.map(p=>p.pc).join(", "),
+    parts:multi?g.parts:null,
+  };
+});
+BY_NIS["12034"]={...BY_NIS["12030"],naam:"Puurs-Sint-Amands (Sint-Amands)"};
+
+// Officiele namen per NIS voor fallback
+const NIS_NAME={
+  "23096":"Zemst","11002":"Antwerpen","11056":"Zwijndrecht","11050":"Wijnegem",
+  "11007":"Borsbeek","11052":"Wommelgem","12014":"Heist-op-den-Berg","11054":"Zandhoven",
+  "13010":"Grobbendonk","13044":"Vorselaar","11057":"Malle","12021":"Lier",
+  "11035":"Ranst","11004":"Boechout","11021":"Hove","11025":"Lint","11024":"Kontich",
+  "12026":"Nijlen","12009":"Duffel","12029":"Putte","11018":"Hemiksem","11038":"Schelle",
+  "11001":"Aartselaar","11029":"Mortsel","11013":"Edegem","12025":"Mechelen",
+  "12005":"Bonheiden","12040":"Willebroek","11037":"Rumst","11030":"Niel","11005":"Boom",
+  "12035":"Sint-Katelijne-Waver","12030":"Puurs-Sint-Amands","12034":"Sint-Amands",
+  "12007":"Bornem","11040":"Schoten","11022":"Kalmthout","11008":"Brasschaat",
+  "11044":"Stabroek","11023":"Kapellen","11009":"Brecht","11039":"Schilde",
+  "11055":"Zoersel","11053":"Wuustwezel","46021":"Sint-Niklaas","46003":"Beveren",
+  "46025":"Temse","46013":"Kruibeke",
+};
+
+// Postcode per NIS voor laatste fallback
+const NIS_PC={};
+Object.entries(GROUPS).forEach(([nis,g])=>{NIS_PC[nis]=g.parts[0].pc;});
+
+function col(d){
+  if(d>10000)return"#002e10";if(d>7000)return"#004a1a";if(d>5000)return"#006824";
+  if(d>3000)return"#008c32";if(d>2000)return"#12a84c";if(d>1500)return"#2ec065";
+  if(d>1000)return"#55d080";if(d>700)return"#82dfa0";if(d>500)return"#aeebc0";
+  if(d>300)return"#ccf2d8";return"#e5f9ec";
+}
+function fmt(n){return Math.round(n).toLocaleString("nl-BE")}
+
+const map=L.map("map",{zoomControl:true});
+map.setView([51.21,4.43],10);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png",{
+  attribution:"&copy; OpenStreetMap &copy; CARTO",subdomains:"abcd",maxZoom:19
+}).addTo(map);
+
+const legCtrl=L.control({position:"bottomright"});
+legCtrl.onAdd=()=>{
+  const d=L.DomUtil.create("div","legend");
+  d.innerHTML="<h4>&#127807; Dichtheid (inw/km&sup2;)</h4>";
+  [[10001,"&gt;10.000"],[7001,"7.000&ndash;10.000"],[5001,"5.000&ndash;7.000"],
+   [3001,"3.000&ndash;5.000"],[2001,"2.000&ndash;3.000"],[1501,"1.500&ndash;2.000"],
+   [1001,"1.000&ndash;1.500"],[701,"700&ndash;1.000"],[501,"500&ndash;700"],
+   [301,"300&ndash;500"],[0,"&lt;300"]].forEach(([v,l])=>{
+    d.innerHTML+=`<div class="lr"><div class="ls" style="background:${col(v)}"></div><span class="ll">${l}</span></div>`;
+  });
+  return d;
+};
+legCtrl.addTo(map);
+
+const statsCtrl=L.control({position:"topleft"});
+statsCtrl.onAdd=()=>{
+  const d=L.DomUtil.create("div","stats");
+  d.innerHTML=`<h4>&#128202; Regio overzicht</h4>
+    <div class="sr"><span class="sl">Gemeenten</span><span class="sv">64</span></div>
+    <div class="sr"><span class="sl">Totaal inwoners</span><span class="sv">1.588.115</span></div>
+    <div class="sr"><span class="sl">Hoogste dichtheid</span><span class="sv" style="color:#00b894">13.101/km&sup2;</span></div>
+    <div class="sr"><span class="sl">Laagste dichtheid</span><span class="sv">125/km&sup2;</span></div>
+    <div class="sr"><span class="sl">Peiljaar</span><span class="sv">2024</span></div>
+    <div class="sh">Klik op een gemeente voor details</div>`;
+  return d;
+};
+statsCtrl.addTo(map);
+
+L.marker([51.1960,4.4558],{
+  icon:L.divIcon({html:'<div style="width:18px;height:18px;background:#ef4444;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(239,68,68,.3),0 0 12px rgba(239,68,68,.5)"></div>',iconSize:[18,18],iconAnchor:[9,9],className:""}),
+  zIndexOffset:2000
+}).addTo(map).bindTooltip("<b>&#127973; AZ Monica Deurne</b>",{permanent:false,direction:"top",offset:[0,-10]});
+
+const gLayer=L.geoJSON(null,{
+  style:f=>({fillColor:col(f.properties.d),fillOpacity:.82,color:"rgba(255,255,255,.2)",weight:1.1}),
+  onEachFeature:(f,layer)=>{
+    const g=f.properties;
+    layer.on({
+      mouseover(e){e.target.setStyle({weight:2.2,color:"rgba(255,255,255,.75)",fillOpacity:.95});e.target.bringToFront()},
+      mouseout(e){gLayer.resetStyle(e.target)},
+      click(e){
+        const pct=Math.min(100,Math.round((g.s/10)*100));
+        let sub="";
+        if(g.parts){
+          sub=`<div class="psub"><div class="psub-t">Deelgebieden</div>`;
+          g.parts.forEach(p=>{sub+=`<div class="psub-r"><span style="color:#9ca3af">${p.naam} <span style="color:#4b5563">(${p.pc})</span></span><span style="color:#00b894;font-weight:600">${fmt(p.d)}/km&sup2;</span></div>`;});
+          sub+="</div>";
+        }
+        L.popup({maxWidth:310}).setLatLng(e.latlng).setContent(`
+          <div class="pt">&#128205; ${g.naam}</div>
+          <div class="pg">
+            <div class="pc"><div class="lb">Dichtheid</div><div class="vl hi">${fmt(g.d)}<span style="font-size:.65rem;color:#6b7280"> /km&sup2;</span></div><div class="bar-bg"><div class="bar-fg" style="width:${pct}%;background:${col(g.d)}"></div></div></div>
+            <div class="pc"><div class="lb">Inwoners (2024)</div><div class="vl">${fmt(g.inv)}</div></div>
+            <div class="pc"><div class="lb">Postcode(s)</div><div class="vl" style="font-size:.78rem">${g.pc}</div></div>
+            <div class="pc"><div class="lb">Score (1&ndash;10)</div><div class="vl">${g.s.toFixed(1)}</div></div>
+          </div>${sub}`).openOn(map);
+      }
+    });
+  }
+}).addTo(map);
+
+function relToGeo(el){
+  if(!el.members)return null;
+  const outer=el.members.filter(m=>m.role==="outer"&&m.geometry&&m.geometry.length>1);
+  const inner=el.members.filter(m=>m.role==="inner"&&m.geometry&&m.geometry.length>1);
+  if(!outer.length)return null;
+  function stitch(ways){
+    if(ways.length===1){const c=ways[0].geometry.map(p=>[p.lon,p.lat]);if(c[0][0]!==c[c.length-1][0])c.push(c[0]);return[c];}
+    const segs=ways.map(w=>({c:w.geometry.map(p=>[p.lon,p.lat]),u:false}));
+    const rings=[];
+    while(segs.some(s=>!s.u)){
+      const s0=segs.find(s=>!s.u);if(!s0)break;s0.u=true;
+      let r=[...s0.c],ch=true;
+      while(ch){ch=false;const t=r[r.length-1];
+        for(const s of segs){if(s.u)continue;
+          const h=s.c[0],tl=s.c[s.c.length-1];
+          if(Math.abs(h[0]-t[0])<1e-7&&Math.abs(h[1]-t[1])<1e-7){r=r.concat(s.c.slice(1));s.u=true;ch=true;break;}
+          if(Math.abs(tl[0]-t[0])<1e-7&&Math.abs(tl[1]-t[1])<1e-7){r=r.concat([...s.c].reverse().slice(1));s.u=true;ch=true;break;}
+        }
+      }
+      if(r[0][0]!==r[r.length-1][0])r.push(r[0]);rings.push(r);
+    }
+    return rings;
+  }
+  const oR=stitch(outer),iR=inner.length?stitch(inner):[];
+  return oR.length===1?{type:"Polygon",coordinates:[oR[0],...iR]}:{type:"MultiPolygon",coordinates:oR.map(r=>[r])};
+}
+
+function setP(pct,txt,step){
+  document.getElementById("pBar").style.width=pct+"%";
+  if(txt)document.getElementById("pTxt").textContent=txt;
+  if(step!==undefined)document.getElementById("pStep").textContent=step;
+}
+
+const EPS=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter","https://maps.mail.ru/osm/tools/overpass/api/interpreter"];
+
+async function post(q,ms=85000){
+  for(const ep of EPS){
+    try{
+      const ctrl=new AbortController();
+      const t=setTimeout(()=>ctrl.abort(),ms);
+      const r=await fetch(ep,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"},signal:ctrl.signal});
+      clearTimeout(t);
+      if(!r.ok)continue;
+      const d=await r.json();
+      if(d.elements&&d.elements.length)return d;
+    }catch(e){continue;}
+  }
+  return null;
+}
+
+function addGeo(nis,g,el){
+  const geo=relToGeo(el);
+  if(!geo)return false;
+  gLayer.addData({type:"Feature",geometry:geo,properties:g});
+  return true;
+}
+
+async function loadMap(){
+  const allNIS=Object.keys(BY_NIS);
+  const added=new Set();
+  let matched=0;
+
+  // ── STAP 1: bulk via ref:INS ──────────────────────────────────────────
+  setP(5,"Stap 1/3: grenzen ophalen via NIS-codes...","Overpass API bulk query...");
+  const Q1=`[out:json][timeout:90];(relation["boundary"="administrative"]["ref:INS"~"^(${allNIS.join("|")})$"];);out geom;`;
+  const d1=await post(Q1);
+  if(d1){
+    const idx={};
+    d1.elements.forEach(el=>{const ins=el.tags&&el.tags["ref:INS"];if(ins)idx[ins]=el;});
+    allNIS.forEach(nis=>{
+      if(added.has(nis))return;
+      if(idx[nis]&&addGeo(nis,BY_NIS[nis],idx[nis])){added.add(nis);matched++;}
+    });
+  }
+  setP(45,`Stap 1 klaar: ${matched}/${allNIS.length} geladen`,`${allNIS.length-added.size} nog te laden...`);
+
+  // ── STAP 2: naam-query met CORRECTE bbox voor ontbrekende ────────────
+  const miss2=allNIS.filter(n=>!added.has(n));
+  if(miss2.length>0){
+    setP(50,`Stap 2/3: ${miss2.length} via naam zoeken...`,miss2.map(n=>NIS_NAME[n]||n).join(", "));
+    // CORRECTE bbox: dekt alle 64 gemeenten (south,west,north,east)
+    const BBOX="(50.85,3.90,51.55,5.00)";
+    const filters=miss2.filter(n=>NIS_NAME[n]).map(n=>`relation["boundary"="administrative"]["name"="${NIS_NAME[n]}"]${BBOX};`).join("
+");
+    if(filters){
+      const Q2=`[out:json][timeout:60];(
+${filters}
+);out geom;`;
+      const d2=await post(Q2,65000);
+      if(d2){
+        const byName={};
+        d2.elements.forEach(el=>{
+          const nm=el.tags&&(el.tags["name"]||el.tags["name:nl"]);
+          if(nm){if(!byName[nm])byName[nm]=[];byName[nm].push(el);}
+        });
+        miss2.forEach(nis=>{
+          if(added.has(nis))return;
+          const nm=NIS_NAME[nis];if(!nm)return;
+          const cands=byName[nm];if(!cands||!cands.length)return;
+          const el=cands.find(e=>e.tags&&e.tags["admin_level"]==="8")||cands[0];
+          if(addGeo(nis,BY_NIS[nis],el)){added.add(nis);matched++;}
+        });
+      }
+    }
+  }
+  setP(80,`Stap 2 klaar: ${matched}/${allNIS.length} geladen`,`${allNIS.length-added.size} nog te laden...`);
+
+  // ── STAP 3: postcode fallback per ontbrekende gemeente ───────────────
+  const miss3=allNIS.filter(n=>!added.has(n));
+  if(miss3.length>0){
+    setP(82,`Stap 3/3: ${miss3.length} via postcode...`,miss3.map(n=>NIS_NAME[n]||n).join(", "));
+    for(const nis of miss3){
+      const pc=NIS_PC[nis];if(!pc)continue;
+      const Q3=`[out:json][timeout:25];(relation["boundary"="postal_code"]["postal_code"="${pc}"];relation["boundary"="administrative"]["postal_code"="${pc}"];);out geom;`;
+      const d3=await post(Q3,28000);
+      if(d3&&d3.elements&&d3.elements.length){
+        const el=d3.elements.find(e=>e.members&&e.members.length>2)||d3.elements[0];
+        if(addGeo(nis,BY_NIS[nis],el)){added.add(nis);matched++;}
+      }
+    }
+  }
+
+  const finalMiss=allNIS.filter(n=>!added.has(n));
+  setP(96,"Kaart renderen...",`${matched}/${allNIS.length} polygonen geladen`);
+  await new Promise(r=>setTimeout(r,400));
+
+  try{const b=gLayer.getBounds();if(b.isValid())map.fitBounds(b,{padding:[30,30]});}catch(e){}
+
+  const msg=finalMiss.length
+    ? `${matched} geladen. Niet gevonden: ${finalMiss.map(n=>NIS_NAME[n]||n).join(", ")}`
+    : `Alle ${matched} gemeenten geladen!`;
+  setP(100,msg,"");
+
+  const ls=document.getElementById("loadScreen");
+  ls.style.opacity="0";
+  setTimeout(()=>{ls.style.display="none"},1000);
+}
+
+window.addEventListener("load",loadMap);
+</script>
+</body>
+</html>
