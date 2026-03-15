@@ -183,7 +183,9 @@ const RAW = [
   ["9150","46013","Kruibeke",425.9,16100,1.2],
 ];
 
-// Groepeer per NIS
+// (GROUPS al gedefinieerd hierboven)
+
+// GROUPS ook nodig voor postcode fallback
 const GROUPS = {};
 RAW.forEach(([pc,nis,naam,d,inv,s]) => {
   if (!GROUPS[nis]) GROUPS[nis] = {parts:[],t:0};
@@ -366,86 +368,190 @@ function setP(pct,txt,step){
   if(step!==undefined) document.getElementById("pStep").textContent = step;
 }
 
-// Overpass API query
-async function loadMap(){
-  const NIS = Object.keys(BY_NIS).join("|");
-  const Q = `[out:json][timeout:90];(relation["boundary"="administrative"]["ref:INS"~"^(${NIS})$"];);out geom;`;
-  const EPS = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-  ];
 
-  let data = null;
-  for(let i=0; i<EPS.length; i++){
-    try{
-      setP(5+i*10, `Verbinden met server ${i+1}/${EPS.length}...`, new URL(EPS[i]).hostname);
+// ============================================================
+// OVERPASS LOADING – dual strategy voor maximale dekking
+// ============================================================
+
+// Belgische naam per NIS (voor fallback query op naam)
+const NIS_NAME = {
+  "23096":"Zemst","11002":"Antwerpen","11056":"Zwijndrecht","11050":"Wijnegem",
+  "11007":"Borsbeek","11052":"Wommelgem","12014":"Heist-op-den-Berg","11054":"Zandhoven",
+  "13010":"Grobbendonk","13044":"Vorselaar","11057":"Malle","12021":"Lier",
+  "11035":"Ranst","11004":"Boechout","11021":"Hove","11025":"Lint","11024":"Kontich",
+  "12026":"Nijlen","12009":"Duffel","12029":"Putte","11018":"Hemiksem","11038":"Schelle",
+  "11001":"Aartselaar","11029":"Mortsel","11013":"Edegem","12025":"Mechelen",
+  "12005":"Bonheiden","12040":"Willebroek","11037":"Rumst","11030":"Niel","11005":"Boom",
+  "12035":"Sint-Katelijne-Waver","12030":"Puurs-Sint-Amands","12034":"Sint-Amands",
+  "12007":"Bornem","11040":"Schoten","11022":"Kalmthout","11008":"Brasschaat",
+  "11044":"Stabroek","11023":"Kapellen","11009":"Brecht","11039":"Schilde",
+  "11055":"Zoersel","11053":"Wuustwezel","46021":"Sint-Niklaas","46003":"Beveren",
+  "46025":"Temse","46013":"Kruibeke",
+};
+
+const ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+];
+
+async function overpassPost(query, timeout=80000) {
+  for (const ep of ENDPOINTS) {
+    try {
       const ctrl = new AbortController();
-      const timer = setTimeout(()=>ctrl.abort(), 85000);
-      const r = await fetch(EPS[i],{
-        method:"POST",
-        body:"data="+encodeURIComponent(Q),
-        headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        signal:ctrl.signal
+      const timer = setTimeout(() => ctrl.abort(), timeout);
+      const r = await fetch(ep, {
+        method: "POST",
+        body: "data=" + encodeURIComponent(query),
+        headers: {"Content-Type":"application/x-www-form-urlencoded"},
+        signal: ctrl.signal
       });
       clearTimeout(timer);
-      if(!r.ok){ console.warn(EPS[i],"HTTP",r.status); continue; }
-      data = await r.json();
-      setP(55,"Data ontvangen!",`${data.elements?.length||0} gemeentegrenzen gevonden`);
-      break;
-    } catch(e){
-      console.warn("Server mislukt:",EPS[i],e.message);
+      if (!r.ok) continue;
+      const data = await r.json();
+      if (data.elements && data.elements.length > 0) return data;
+    } catch(e) { continue; }
+  }
+  return null;
+}
+
+function indexByINS(elements) {
+  const idx = {};
+  elements.forEach(el => {
+    const ins = el.tags && el.tags["ref:INS"];
+    if (ins) idx[ins] = el;
+  });
+  return idx;
+}
+
+function addToMap(nis, g, el) {
+  const geo = relToGeo(el);
+  if (!geo) return false;
+  gLayer.addData({type:"Feature", geometry:geo, properties:g});
+  return true;
+}
+
+async function loadMap() {
+  const allNIS = Object.keys(BY_NIS);
+  const NIS_STR = allNIS.join("|");
+  
+  // ── QUERY 1: ref:INS bulk (primaire methode) ──────────────────────────
+  setP(5, "Gemeentegrenzen ophalen (stap 1/2)...", "Overpass API via ref:INS codes...");
+  
+  const Q1 = `[out:json][timeout:90];
+(
+  relation["boundary"="administrative"]["ref:INS"~"^(${NIS_STR})$"];
+);
+out geom;`;
+
+  const data1 = await overpassPost(Q1);
+  const found1 = data1 ? indexByINS(data1.elements) : {};
+  
+  const added = new Set();
+  let matched = 0;
+  
+  Object.entries(BY_NIS).forEach(([nis, g]) => {
+    if (added.has(nis)) return;
+    const el = found1[nis];
+    if (!el) return;
+    if (addToMap(nis, g, el)) { added.add(nis); matched++; }
+  });
+  
+  setP(55, `Stap 1 klaar: ${matched} gemeenten geladen`, `${allNIS.length - added.size} nog te laden via naam...`);
+  
+  // ── QUERY 2: naam-gebaseerde fallback voor ontbrekende ────────────────
+  const missing = allNIS.filter(nis => !added.has(nis));
+  
+  if (missing.length > 0) {
+    setP(60, `Stap 2/2: ${missing.length} gemeenten via naam zoeken...`, missing.map(n => NIS_NAME[n] || n).join(", "));
+    
+    // Bouw naam-query voor alle ontbrekende gemeenten
+    // Gebruik bounding box van regio (bbox Antwerpen provincie + omgeving)
+    const bbox = "(50.9,3.8,51.5,5.1)";
+    const nameFilters = missing
+      .filter(nis => NIS_NAME[nis])
+      .map(nis => `relation["boundary"="administrative"]["name"="${NIS_NAME[nis]}"]${bbox};`)
+      .join("\n");
+    
+    if (nameFilters) {
+      const Q2 = `[out:json][timeout:60];
+(
+${nameFilters}
+);
+out geom;`;
+
+      const data2 = await overpassPost(Q2, 65000);
+      
+      if (data2 && data2.elements) {
+        // Index op naam
+        const byName = {};
+        data2.elements.forEach(el => {
+          const name = el.tags && (el.tags["name"] || el.tags["name:nl"]);
+          if (name) {
+            if (!byName[name]) byName[name] = [];
+            byName[name].push(el);
+          }
+        });
+        
+        missing.forEach(nis => {
+          if (added.has(nis)) return;
+          const name = NIS_NAME[nis];
+          if (!name) return;
+          const candidates = byName[name];
+          if (!candidates || !candidates.length) return;
+          // Neem de eerste met admin_level=8 of gewoon de eerste
+          const el = candidates.find(e => e.tags && e.tags["admin_level"] === "8") || candidates[0];
+          const g = BY_NIS[nis];
+          if (addToMap(nis, g, el)) { added.add(nis); matched++; }
+        });
+      }
+    }
+  }
+  
+  // ── QUERY 3: specifieke aanpak voor hardnekkige gevallen ──────────────
+  const stillMissing = allNIS.filter(nis => !added.has(nis));
+  if (stillMissing.length > 0) {
+    setP(85, `Stap 3: ${stillMissing.length} resterende via postcode...`, stillMissing.map(n => NIS_NAME[n]||n).join(", "));
+    
+    // Per gemeente apart proberen via postcode boundary
+    const pcByNIS = {};
+    Object.entries(GROUPS).forEach(([nis, g]) => { pcByNIS[nis] = g.parts[0].pc; });
+    
+    for (const nis of stillMissing) {
+      const pc = pcByNIS[nis];
+      if (!pc) continue;
+      const Q3 = `[out:json][timeout:25];relation["boundary"="postal_code"]["postal_code"="${pc}"];out geom;`;
+      const data3 = await overpassPost(Q3, 28000);
+      if (data3 && data3.elements && data3.elements.length) {
+        const g = BY_NIS[nis];
+        if (addToMap(nis, g, data3.elements[0])) { added.add(nis); matched++; }
+      }
     }
   }
 
-  if(!data||!data.elements||!data.elements.length){
-    document.getElementById("pTxt").textContent = "Laden mislukt. Herlaad de pagina (F5).";
-    document.getElementById("pTxt").style.color = "#ef4444";
-    document.getElementById("pStep").textContent = "Controleer je internetverbinding.";
-    return;
+  setP(95, "Kaart renderen...", `${matched} van ${allNIS.length} unieke gemeentepolygonen geladen`);
+  
+  const finalMissing = allNIS.filter(nis => !added.has(nis));
+  if (finalMissing.length > 0) {
+    console.warn("Niet geladen:", finalMissing.map(n => `${n} (${NIS_NAME[n]||"?"})`).join(", "));
   }
-
-  setP(65,"Grenzen koppelen...","NIS-codes matchen aan gemeenten...");
-
-  // Index op ref:INS
-  const byINS = {};
-  data.elements.forEach(el => {
-    const ins = el.tags && el.tags["ref:INS"];
-    if(ins) byINS[ins] = el;
-  });
-
-  setP(78,"Kleuren toewijzen...","Dichtheidsdata koppelen...");
-
-  let matched = 0;
-  const added = new Set();
-
-  Object.entries(BY_NIS).forEach(([nis,g]) => {
-    if(added.has(nis)) return;
-    const el = byINS[nis];
-    if(!el){ console.warn("Niet gevonden in Overpass:",nis,g.naam); return; }
-    const geo = relToGeo(el);
-    if(!geo){ console.warn("Geen geometrie:",nis,g.naam); return; }
-    gLayer.addData({type:"Feature", geometry:geo, properties:g});
-    added.add(nis);
-    matched++;
-  });
-
-  setP(95,"Kaart renderen...",`${matched} gemeenten geladen`);
-  await new Promise(r=>setTimeout(r,400));
-
-  try{
+  
+  await new Promise(r => setTimeout(r, 400));
+  
+  try {
     const b = gLayer.getBounds();
-    if(b.isValid()) map.fitBounds(b,{padding:[30,30]});
-  }catch(e){}
-
-  setP(100,`Klaar! ${matched} gemeenten geladen.`,"");
-
+    if (b.isValid()) map.fitBounds(b, {padding:[30,30]});
+  } catch(e) {}
+  
+  setP(100, `Klaar! ${matched} gemeenten geladen.`, finalMissing.length ? `Niet gevonden: ${finalMissing.map(n=>NIS_NAME[n]||n).join(", ")}` : "Alle gemeenten geladen!");
+  
   const ls = document.getElementById("loadScreen");
   ls.style.opacity = "0";
-  setTimeout(()=>{ ls.style.display="none"; }, 1000);
+  setTimeout(() => { ls.style.display = "none"; }, 1000);
 }
 
 window.addEventListener("load", loadMap);
+
 </script>
 </body>
 </html>
